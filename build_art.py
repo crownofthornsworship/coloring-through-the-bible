@@ -13,11 +13,17 @@ im=cv2.imread(a.source); gray=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
 gray=cv2.resize(gray,(1200,1200),interpolation=cv2.INTER_AREA)
 ink=(gray<170).astype('uint8')
 ink=cv2.morphologyEx(ink,cv2.MORPH_CLOSE,np.ones((2,2),np.uint8))
+# Seal tiny antialiasing gaps in otherwise closed coloring-book outlines.
+# This prevents enclosed objects (clouds, clothing panels, shield details, etc.)
+# from leaking into a large background region during flood-fill extraction.
+ink=cv2.dilate(ink,np.ones((3,3),np.uint8),iterations=1)
 white=1-ink;n,labels,stats,centers=cv2.connectedComponentsWithStats(white,4)
 regions=[];minimum={'beginner':850,'easy':400,'medium':100,'hard':55,'expert':35}[a.level]
 for j in range(1,n):
  x,y,w,h,area=stats[j]
  if area<minimum or w<4 or h<4:continue
+ # Border-touching white is the unbounded page/background and is not a safe
+ # paint bucket. Every playable region must be enclosed by ink.
  if x==0 or y==0 or x+w==1200 or y+h==1200:continue
  mask=(labels[y:y+h,x:x+w]==j).astype('uint8')
  contours,hier=cv2.findContours(mask,cv2.RETR_CCOMP,cv2.CHAIN_APPROX_SIMPLE)
@@ -47,6 +53,12 @@ if len(regions)>target:
    if owner:owner['d']+=r['d'];owner['area']+=r['area']
  regions=sorted(retained,key=lambda r:(r['y'],r['x']))
 for j,r in enumerate(regions):r['id']=j;r['name']=f'Coloring area {j+1}'
+# Structural QA: no playable region may touch the page edge. Extremely large
+# regions are flagged because they usually indicate an open outline/leak.
+bad=[r for r in regions if r['box'][0]<=0 or r['box'][1]<=0 or r['box'][0]+r['box'][2]>=1200 or r['box'][1]+r['box'][3]>=1200]
+if bad:raise SystemExit(f'Unsafe open coloring regions: {len(bad)}')
+huge=[r for r in regions if r['area']>1200*1200*.28]
+if huge:raise SystemExit(f'Likely segmentation leak: {len(huge)} region(s) exceed 28% of page')
 # Transparent black ink plate, no white pixels to obscure fills.
 alpha=np.clip((255-gray)*1.5,0,255).astype('uint8');alpha[gray>235]=0
 rgba=np.zeros((1200,1200,4),np.uint8);rgba[:,:,3]=alpha
