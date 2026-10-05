@@ -1,4 +1,4 @@
-import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=3.5';
+import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=3.6';
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v3',LEGACY_KEY='ll-coloring-bible-release-v2';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||localStorage.getItem('ll-coloring-bible-release-v1'));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false,eraser=false,tray=false,loadingToken=0,artReady=false;
 const tabs=[['journey','Bible Journey'],['old','Old Testament'],['jesus','Life of Jesus'],['church','Early Church'],['free','Free Color'],['artwork','My Artwork / Progress']];
@@ -72,8 +72,11 @@ function updateLabelVisibility(){
    // Only show the selected number in guided mode. This matches the way the
    // player is actually hunting areas and prevents unrelated numbers from
    // covering detailed faces/armor at high zoom.
-   const relevant=mode!=='guided'||selectedMatch;
-   const show=numbers&&relevant&&!fills[r.id]&&found&&usefulRadius&&sx>16&&sy>16&&sx<v.clientWidth-16&&sy<v.clientHeight-16&&!crowded;
+   // Numbers are the navigation system for color-by-number. Show every
+   // unfilled playable area's number when it can be placed legibly; selected
+   // color gets priority through sorting/spacing above.
+   const relevant=true;
+   const show=numbers&&relevant&&!fills[r.id]&&found&&usefulRadius&&sx>12&&sy>12&&sx<v.clientWidth-12&&sy<v.clientHeight-12&&!crowded;
    el.style.display=show?'':'none';
    if(show){
      occupied.add(gx+':'+gy);el.setAttribute('x',lx);el.setAttribute('y',ly);
