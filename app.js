@@ -1,4 +1,4 @@
-import {scenes,illustration,palette,colorNames} from './scenes.js';
+import {scenes,illustration,palette,colorNames} from './scenes.js?v=release1';
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v1';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false;
 const tabs=[['journey','Bible Journey'],['old','Old Testament'],['jesus','Life of Jesus'],['church','Early Church'],['free','Free Color'],['artwork','My Artwork / Progress']];
