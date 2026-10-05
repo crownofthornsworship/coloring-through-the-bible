@@ -1,4 +1,4 @@
-import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=2.15';
+import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=2.17';
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v2',LEGACY_KEY='ll-coloring-bible-release-v1';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false,eraser=false,tray=false,loadingToken=0,artReady=false;
 const tabs=[['journey','Bible Journey'],['old','Old Testament'],['jesus','Life of Jesus'],['church','Early Church'],['free','Free Color'],['artwork','My Artwork / Progress']];
@@ -60,7 +60,11 @@ function updateLabelVisibility(){
    const spacing=selectedMatch?38:46,gx=Math.round(sx/spacing),gy=Math.round(sy/spacing);
    let crowded=false;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(occupied.has((gx+a)+':'+(gy+b)))crowded=true;
    const usefulRadius=(Number(r.radius||0)*scale)>=10;
-   const show=numbers&&!fills[r.id]&&found&&usefulRadius&&sx>16&&sy>16&&sx<v.clientWidth-16&&sy<v.clientHeight-16&&!crowded;
+   // Only show the selected number in guided mode. This matches the way the
+   // player is actually hunting areas and prevents unrelated numbers from
+   // covering detailed faces/armor at high zoom.
+   const relevant=mode!=='guided'||selectedMatch;
+   const show=numbers&&relevant&&!fills[r.id]&&found&&usefulRadius&&sx>16&&sy>16&&sx<v.clientWidth-16&&sy<v.clientHeight-16&&!crowded;
    el.style.display=show?'':'none';
    if(show){
      occupied.add(gx+':'+gy);el.setAttribute('x',lx);el.setAttribute('y',ly);
