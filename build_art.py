@@ -35,7 +35,26 @@ for j in range(1,n):
   paths.append('M'+'L'.join(f'{q[0]},{q[1]}' for q in pts)+'Z')
  if not paths:continue
  dist=cv2.distanceTransform(mask,cv2.DIST_L2,5);_,radius,_,point=cv2.minMaxLoc(dist)
- regions.append({'id':len(regions),'d':''.join(paths),'x':x+point[0],'y':y+point[1],'radius':round(radius,1),'box':[int(x),int(y),int(w),int(h)],'area':int(area),'color':int((centers[j][0]//180+centers[j][1]//210)%12),'name':f'Illustration area {len(regions)+1}'})
+ regions.append({'id':len(regions),'d':''.join(paths),'x':x+point[0],'y':y+point[1],'radius':round(radius,1),'box':[int(x),int(y),int(w),int(h)],'area':int(area),'color':0,'name':f'Illustration area {len(regions)+1}'})
+# Assign a restrained, adult-coloring-book palette when no approved color guide exists.
+# This is geometry-aware rather than the old arbitrary x/y modulo coloring.
+# Large upper regions read as sky; enclosed upper-middle soft regions become cream/clouds;
+# ground/rock/architecture/foliage receive coordinated natural tones.
+if not a.guide:
+ for r in regions:
+  x,y,w,h=r['box']; cx=x+w/2; cy=y+h/2; area=r['area']
+  if cy < 430 and area > 18000: color=0          # open sky
+  elif cy < 560 and area < 18000: color=10       # clouds / light details
+  elif cy > 880 and area > 6500: color=8         # stone / foreground earth
+  elif cy > 690 and area > 3500: color=2         # grasses / hills
+  elif cx < 330 and cy < 760: color=3             # tree / foliage zone
+  elif cx > 700 and 430 < cy < 980: color=4       # warm figure / armor accents
+  else:
+   # Stable natural variation for garments, architecture and small details.
+   natural=[10,8,2,9,11,4,3]
+   color=natural[(int(cx//95)+int(cy//110)+int(area//1800))%len(natural)]
+  r['color']=color
+
 # Group tiny neighboring details with a larger nearby area instead of demanding
 # hundreds of inaccessible taps on garment seams, eyes and foliage fragments.
 # The underlying five drawings remain different; no geometry is subdivided.
