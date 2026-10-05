@@ -1,10 +1,10 @@
-import * as classic from './legacy-art.js?v=2';
+import * as classic from './legacy-art.js?v=2.2';
 export const palette=classic.palette,colorNames=classic.colorNames;
 export const showcase=['david','ark','storm'];
 export const levels=['beginner','easy','medium','hard','expert'];
 export const scenes=classic.scenes.map(s=>({...s,showcase:showcase.includes(s.id),...(s.id==='david'?{title:'David and Goliath',story:'David trusted the Lord when he faced Goliath. He chose five smooth stones and went forward with his sling. The victory belonged to God.',think:'What helps you trust God when a challenge feels bigger than you?'}:{}),...(s.id==='ark'?{think:'How can remembering God’s faithfulness help you today?'}:{}),...(s.id==='storm'?{think:'When you feel afraid, how can you turn to Jesus?'}:{})}));
 const cache=new Map();
-export async function ensureArt(scene,difficulty){if(!difficulty.startsWith('v2-'))return;const level=difficulty.slice(3),key=scene.id+':'+level;if(cache.has(key))return;let data;if('DecompressionStream' in globalThis){const response=await fetch(`./art/${scene.id}-${level}.json.gz?v=2`);if(!response.ok)throw Error('Artwork unavailable');data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}else{const response=await fetch(`./art/${scene.id}-${level}.json?v=2`);if(!response.ok)throw Error('Artwork unavailable');data=await response.json();}cache.set(key,data);if(cache.size>3)cache.delete(cache.keys().next().value);}
+export async function ensureArt(scene,difficulty){if(!difficulty.startsWith('v2-'))return;const level=difficulty.slice(3),key=scene.id+':'+level;if(cache.has(key))return;let data;if('DecompressionStream' in globalThis){const response=await fetch(`./art/${scene.id}-${level}.json.gz?v=2.2`);if(!response.ok)throw Error('Artwork unavailable');data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}else{const response=await fetch(`./art/${scene.id}-${level}.json?v=2.2`);if(!response.ok)throw Error('Artwork unavailable');data=await response.json();}cache.set(key,data);if(cache.size>3)cache.delete(cache.keys().next().value);}
 export function illustration(scene,difficulty='easy',fills={},preview=false,numbers=true){
  if(!difficulty.startsWith('v2-'))return classic.illustration(scene,difficulty,fills,preview,numbers);
  const level=difficulty.slice(3),data=cache.get(scene.id+':'+level);
