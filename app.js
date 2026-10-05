@@ -1,4 +1,4 @@
-import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=2.18';
+import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=2.19';
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v2',LEGACY_KEY='ll-coloring-bible-release-v1';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false,eraser=false,tray=false,loadingToken=0,artReady=false;
 const tabs=[['journey','Bible Journey'],['old','Old Testament'],['jesus','Life of Jesus'],['church','Early Church'],['free','Free Color'],['artwork','My Artwork / Progress']];
@@ -48,11 +48,20 @@ function updateLabelVisibility(){
    let lx=Number(el.dataset.homeX),ly=Number(el.dataset.homeY),found=false;
    if(visibleW*scale>=minScreen&&visibleH*scale>=minScreen){
      const cx=(ix1+ix2)/2,cy=(iy1+iy2)/2,candidates=[[cx,cy]];
-     for(let ring=1;ring<=4;ring++)for(let gy=-ring;gy<=ring;gy++)for(let gx=-ring;gx<=ring;gx++)if(Math.max(Math.abs(gx),Math.abs(gy))===ring)candidates.push([cx+gx*visibleW/10,cy+gy*visibleH/10]);
+     // Dense search for tiny/irregular visible pieces. The previous 9x9 search
+     // could miss a perfectly playable sliver and leave it with no number.
+     const steps=selectedMatch?16:8;
+     for(let gy=0;gy<=steps;gy++)for(let gx=0;gx<=steps;gx++)candidates.push([ix1+(gx+.5)*visibleW/(steps+1),iy1+(gy+.5)*visibleH/(steps+1)]);
      for(const [px,py] of candidates){
        if(px<=ix1||px>=ix2||py<=iy1||py>=iy2)continue;
        try{if(path.isPointInFill(new DOMPoint(px,py))){lx=px;ly=py;found=true;break;}}catch{found=true;break;}
      }
+   }
+   // If the active region is visible but too skinny for an internal label,
+   // keep it discoverable instead of silently creating an unnumbered hole.
+   if(selectedMatch&&!found&&visibleW>0&&visibleH>0){
+     const hx=Number(el.dataset.homeX),hy=Number(el.dataset.homeY);
+     if(hx>=view.x1&&hx<=view.x2&&hy>=view.y1&&hy<=view.y2){lx=hx;ly=hy;found=true;}
    }
    const sx=lx*scale+tx,sy=ly*scale+ty;
    // Keep labels sparse at deep zoom. Tiny neighboring regions no longer create
