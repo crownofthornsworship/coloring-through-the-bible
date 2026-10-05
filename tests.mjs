@@ -1,0 +1,5 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {scenes,illustration,palette} from './scenes.js';
+test('The V1 journey spans Genesis through Revelation with unique stories',()=>{assert.equal(scenes[0].book,'Genesis 1');assert.match(scenes.at(-1).book,/Revelation/);assert.equal(new Set(scenes.map(s=>s.id)).size,scenes.length);});
+for(const scene of scenes)test(`${scene.id}: every detail level has valid, stable, independently fillable regions`,()=>{let previous=0;for(const d of ['easy','detailed','expert']){const {regions,svg}=illustration(scene,d);assert.ok(regions.length>previous);previous=regions.length;assert.equal((svg.match(/data-region=/g)||[]).length,regions.length);const fills=Object.fromEntries(regions.map(r=>[r.id,palette[r.color]]));assert.ok(regions.every(r=>r.color>=0&&r.color<palette.length));assert.deepEqual(illustration(scene,d,fills).regions,regions);assert.equal(new Set(regions.map(r=>r.id)).size,regions.length);assert.ok(!illustration(scene,d,fills).svg.includes('fill="undefined"'));}});
