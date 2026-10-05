@@ -18,10 +18,10 @@ ink=cv2.morphologyEx(ink,cv2.MORPH_CLOSE,np.ones((2,2),np.uint8))
 # from leaking into a large background region during flood-fill extraction.
 ink=cv2.dilate(ink,np.ones((3,3),np.uint8),iterations=1)
 white=1-ink;n,labels,stats,centers=cv2.connectedComponentsWithStats(white,4)
-regions=[];minimum={'beginner':850,'easy':400,'medium':100,'hard':55,'expert':35}[a.level]
+regions=[];minimum={'beginner':1100,'easy':650,'medium':260,'hard':150,'expert':90}[a.level]
 for j in range(1,n):
  x,y,w,h,area=stats[j]
- if area<minimum or w<4 or h<4:continue
+ if area<minimum or w<6 or h<6:continue
  # Border-touching white is the unbounded page/background and is not a safe
  # paint bucket. Every playable region must be enclosed by ink.
  if x==0 or y==0 or x+w==1200 or y+h==1200:continue
@@ -58,7 +58,7 @@ if not a.guide:
 # Group tiny neighboring details with a larger nearby area instead of demanding
 # hundreds of inaccessible taps on garment seams, eyes and foliage fragments.
 # The underlying five drawings remain different; no geometry is subdivided.
-target={'beginner':30,'easy':65,'medium':140,'hard':280,'expert':500}[a.level]
+target={'beginner':28,'easy':60,'medium':120,'hard':220,'expert':360}[a.level]
 if len(regions)>target:
  retained=sorted(regions,key=lambda r:r['area'],reverse=True)[:target]
  seed=np.ones((1200,1200),np.uint8)
@@ -78,6 +78,11 @@ bad=[r for r in regions if r['box'][0]<=0 or r['box'][1]<=0 or r['box'][0]+r['bo
 if bad:raise SystemExit(f'Unsafe open coloring regions: {len(bad)}')
 huge=[r for r in regions if r['area']>1200*1200*.28]
 if huge:raise SystemExit(f'Likely segmentation leak: {len(huge)} region(s) exceed 28% of page')
+# Production rule: if a region cannot ever carry a legible zoomed label, it is
+# decorative ink, not a playable mystery tap. This prevents facial features and
+# distant soldiers from degenerating into unnumbered micro-regions.
+too_tiny=[r for r in regions if r['radius']<2.2 or min(r['box'][2],r['box'][3])<6]
+if too_tiny: raise SystemExit(f'Unplayable micro-regions survived cleanup: {len(too_tiny)}')
 # Transparent black ink plate, no white pixels to obscure fills.
 alpha=np.clip((255-gray)*1.5,0,255).astype('uint8');alpha[gray>235]=0
 rgba=np.zeros((1200,1200,4),np.uint8);rgba[:,:,3]=alpha
