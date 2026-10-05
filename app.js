@@ -32,29 +32,37 @@ function updateLabelVisibility(){
  if(!current)return;
  const v=$('#viewport'),svg=$('.color-art');if(!v||!svg)return;
  const size=Math.min(v.clientWidth,v.clientHeight),units=difficulty.startsWith('v2-')?1200:600,scale=size/units*zoom;
+ const view={x1:-tx/scale,y1:-ty/scale,x2:(v.clientWidth-tx)/scale,y2:(v.clientHeight-ty)/scale};
  const occupied=new Set(),nodes=[...svg.querySelectorAll('[data-label]')];
  nodes.sort((a,b)=>{
    const ar=regions[Number(a.dataset.label)],br=regions[Number(b.dataset.label)];
-   const ap=ar?.color===selected?1:0,bp=br?.color===selected?1:0;
+   const ap=ar?.color===selected&&!fills[ar.id]?1:0,bp=br?.color===selected&&!fills[br.id]?1:0;
    return bp-ap||Number(b.dataset.radius||50)-Number(a.dataset.radius||50);
  });
  for(const el of nodes){
-   const r=regions[Number(el.dataset.label)];if(!r)continue;
-   const x=Number(el.getAttribute('x'))*scale+tx,y=Number(el.getAttribute('y'))*scale+ty,radius=Number(el.dataset.radius||50)*scale;
-   const selectedMatch=mode==='guided'&&r.color===selected&&!fills[r.id];
-   const minRadius=selectedMatch?(zoom<=1.1?5.5:4):10;
-   const spacing=selectedMatch?30:36,gx=Math.round(x/spacing),gy=Math.round(y/spacing),cell=gx+':'+gy;
+   const r=regions[Number(el.dataset.label)],path=svg.querySelector(`[data-region="${el.dataset.label}"]`);if(!r||!path)continue;
+   if(!el.dataset.homeX){el.dataset.homeX=el.getAttribute('x');el.dataset.homeY=el.getAttribute('y');}
+   const box=path.getBBox(),ix1=Math.max(box.x,view.x1),iy1=Math.max(box.y,view.y1),ix2=Math.min(box.x+box.width,view.x2),iy2=Math.min(box.y+box.height,view.y2);
+   const visibleW=Math.max(0,ix2-ix1),visibleH=Math.max(0,iy2-iy1),selectedMatch=mode==='guided'&&r.color===selected&&!fills[r.id];
+   const minScreen=selectedMatch?14:(zoom<1.35?30:18);
+   let lx=Number(el.dataset.homeX),ly=Number(el.dataset.homeY),found=false;
+   if(visibleW*scale>=minScreen&&visibleH*scale>=minScreen){
+     const cx=(ix1+ix2)/2,cy=(iy1+iy2)/2,candidates=[[cx,cy]];
+     for(let ring=1;ring<=4;ring++)for(let gy=-ring;gy<=ring;gy++)for(let gx=-ring;gx<=ring;gx++)if(Math.max(Math.abs(gx),Math.abs(gy))===ring)candidates.push([cx+gx*visibleW/10,cy+gy*visibleH/10]);
+     for(const [px,py] of candidates){
+       if(px<=ix1||px>=ix2||py<=iy1||py>=iy2)continue;
+       try{if(path.isPointInFill(new DOMPoint(px,py))){lx=px;ly=py;found=true;break;}}catch{found=true;break;}
+     }
+   }
+   const sx=lx*scale+tx,sy=ly*scale+ty,spacing=selectedMatch?27:32,gx=Math.round(sx/spacing),gy=Math.round(sy/spacing);
    let crowded=false;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(occupied.has((gx+a)+':'+(gy+b)))crowded=true;
-   const show=numbers&&!fills[r.id]&&radius>=minRadius&&x>12&&y>12&&x<v.clientWidth-12&&y<v.clientHeight-12&&!crowded;
+   const show=numbers&&!fills[r.id]&&found&&sx>12&&sy>12&&sx<v.clientWidth-12&&sy<v.clientHeight-12&&!crowded;
    el.style.display=show?'':'none';
    if(show){
-     occupied.add(cell);
-     const screenFont=selectedMatch?18:15;
-     el.setAttribute('font-size',String(screenFont/scale));
-     el.setAttribute('font-weight',selectedMatch?'800':'650');
-     el.setAttribute('stroke','#fffdf6');
-     el.setAttribute('stroke-width',String(3.5/scale));
-     el.setAttribute('paint-order','stroke');
+     occupied.add(gx+':'+gy);el.setAttribute('x',lx);el.setAttribute('y',ly);
+     const screenFont=selectedMatch?19:16;
+     el.setAttribute('font-size',String(screenFont/scale));el.setAttribute('font-weight',selectedMatch?'800':'700');
+     el.setAttribute('stroke','#fffdf6');el.setAttribute('stroke-width',String(4/scale));el.setAttribute('paint-order','stroke');
    }
  }
 }
@@ -82,14 +90,16 @@ function hint(){
  const candidates=regions.filter(r=>!fills[r.id]&&(mode==='free'||r.color===selected)).sort((a,b)=>Number(b.radius||0)-Number(a.radius||0));
  if(!candidates.length){message('This color is complete. Choose another color.');return;}
  const r=candidates[hintCursor%candidates.length];hintCursor++;
- const el=$(`[data-region="${r.id}"]`),v=$('#viewport');
- const box=difficulty.startsWith('v2-')&&r.box?{x:r.box[0],y:r.box[1],width:r.box[2],height:r.box[3]}:el.getBBox();
+ const el=$(`[data-region="${r.id}"]`),v=$('#viewport'),box=el.getBBox();
  const size=Math.min(v.clientWidth,v.clientHeight),units=difficulty.startsWith('v2-')?1200:600;
- const fitZoom=Math.min(v.clientWidth,v.clientHeight)*.28/Math.max(1,Math.max(box.width,box.height)*size/units);
- zoom=Math.max(2.25,Math.min(8,fitZoom));
+ const targetScreen=Math.min(v.clientWidth,v.clientHeight)*.22;
+ const fitZoom=targetScreen/Math.max(1,Math.min(Math.max(box.width,box.height),Math.sqrt(Math.max(1,box.width*box.height)))*size/units);
+ zoom=Math.max(1.8,Math.min(4.25,fitZoom));
  tx=v.clientWidth/2-(box.x+box.width/2)*size/units*zoom;
  ty=v.clientHeight/2-(box.y+box.height/2)*size/units*zoom;
- transform();el.classList.add('hint');el.focus({preventScroll:true});setTimeout(()=>el.classList.remove('hint'),2600);
+ transform();
+ const label=$(`[data-label="${r.id}"]`);if(label){label.style.display='';label.setAttribute('font-weight','900');}
+ el.classList.add('hint');el.focus({preventScroll:true});setTimeout(()=>el.classList.remove('hint'),2600);
  message(`Area found · color ${r.color+1} · tap Find again for the next one`);
 }
 async function download(){try{const art=illustration(current,difficulty,fills,false,false).svg;const blob=new Blob([art],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});const canvas=document.createElement('canvas');canvas.width=canvas.height=1800;canvas.getContext('2d').drawImage(img,0,0,1800,1800);URL.revokeObjectURL(url);const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!png)throw Error();const downloadUrl=URL.createObjectURL(png);showModal(`<h2>Your artwork is ready.</h2><img src="${downloadUrl}" alt="Your colored ${current.title} picture" style="display:block;width:100%;border-radius:12px"><p>Download your picture, or touch and hold it to save on your phone.</p><div class="modal-buttons"><a class="primary export-link" href="${downloadUrl}" download="${current.id}-${difficulty}-light-and-life.png">Download PNG ↓</a><button data-action="close">Back to coloring</button></div>`);$('#modal').addEventListener('close',()=>URL.revokeObjectURL(downloadUrl),{once:true});}catch{message('Could not export this picture. Please try again.');}}
