@@ -10,22 +10,44 @@ function simplifyInkPath(d,tolerance=1.45){
  const rdp=pts=>{if(pts.length<3)return pts;let best=0,idx=0;for(let i=1;i<pts.length-1;i++){const q=dist2(pts[i],pts[0],pts[pts.length-1]);if(q>best){best=q;idx=i}}if(best>sq){const a=rdp(pts.slice(0,idx+1)),b=rdp(pts.slice(idx));return a.slice(0,-1).concat(b)}return [pts[0],pts[pts.length-1]]};
  return d.replace(/M([^Z]+)Z/g,(_,body)=>{const pts=[...body.matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)].map(m=>[+m[1],+m[2]]);if(pts.length<4)return 'M'+body+'Z';const closed=pts.concat([pts[0]]),clean=rdp(closed);return 'M'+clean.map(p=>p[0]+','+p[1]).join('L')+'Z'});
 }
-export async function ensureArt(scene,difficulty){if(!difficulty.startsWith('v2-'))return;const level=difficulty.slice(3),key=scene.id+':'+level;if(cache.has(key))return;let data;if('DecompressionStream' in globalThis){const response=await fetch(`./art/${scene.id}-${level}.json.gz?v=2.13`);if(!response.ok)throw Error('Artwork unavailable');data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}else{const response=await fetch(`./art/${scene.id}-${level}.json?v=2.13`);if(!response.ok)throw Error('Artwork unavailable');data=await response.json();}cache.set(key,data);if(cache.size>3)cache.delete(cache.keys().next().value);}
+export async function ensureArt(scene,difficulty){if(!difficulty.startsWith('v2-'))return;const level=difficulty.slice(3),key=scene.id+':'+level;if(cache.has(key))return;let data;if('DecompressionStream' in globalThis){const response=await fetch(`./art/${scene.id}-${level}.json.gz?v=2.15`);if(!response.ok)throw Error('Artwork unavailable');data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}else{const response=await fetch(`./art/${scene.id}-${level}.json?v=2.15`);if(!response.ok)throw Error('Artwork unavailable');data=await response.json();}cache.set(key,data);if(cache.size>3)cache.delete(cache.keys().next().value);}
 function displayColor(scene,level,r){
  if(r.colorOverride!=null)return r.colorOverride;
- const x=r.x,y=r.y,area=r.area||0;
- // Presentation-time semantic palette for legacy V2 assets. This fixes the
- // arbitrary coordinate-generated colors immediately without changing region IDs/saves.
- if(y<410&&area>9000)return 0;             // sky
- if(y<535&&area<16000)return 10;           // clouds/light details
- if(y>900&&area>6000)return 8;             // foreground stone/earth
- if(y>690&&area>3000)return 2;             // hills/grass
- if(x<330&&y<790)return 3;                 // tree/foliage
+ const x=r.x,y=r.y,area=r.area||0,[bx,by,bw,bh]=r.box||[x,y,0,0],cx=bx+bw/2,cy=by+bh/2;
+ // Scene-aware compatibility map for already-generated V2 assets.
+ // Narrow upper enclosed bands are clouds/light; broad upper enclosed fields are sky.
+ if(scene.id==='david'){
+   if(cy<410){
+     if(area>30000||bw>420)return 0;
+     if(bw>70&&bh<150&&area<18000)return 10;
+     if(cx<380)return 3;
+   }
+   if(cy>880&&area>5000)return 8;
+   if(cy>650&&cx<650)return area>3500?2:8;
+   if(cx>690&&cy>390)return [4,8,9,11,10][(Math.floor(cx/120)+Math.floor(cy/140))%5];
+ }
+ if(scene.id==='ark'){
+   if(cy<430){if(area>24000||bw>420)return 0;if(bw>65&&area<16000)return 10;}
+   if(cy>760)return area>5000?2:8;
+   if(cx>250&&cx<950&&cy>350)return [9,11,8,4][(Math.floor(cx/130)+Math.floor(cy/150))%4];
+ }
+ if(scene.id==='storm'){
+   if(cy<430){if(area>22000||bw>400)return 7;if(bw>65&&area<16000)return 10;}
+   if(cy>690)return 7;
+   if(cy>450&&area>5000)return 7;
+ }
+ if(cy<430&&area>18000)return 0;
+ if(cy<560&&area<18000)return 10;
+ if(cy>880&&area>6500)return 8;
+ if(cy>690&&area>3500)return 2;
+ if(cx<330&&cy<760)return 3;
  const natural=[10,8,2,9,11,4,3,6,7];
- return natural[(Math.floor(x/105)+Math.floor(y/125)+Math.floor(area/2200))%natural.length];
+ return natural[(Math.floor(cx/105)+Math.floor(cy/125)+Math.floor(area/2200))%natural.length];
 }
 function normalizedRegions(scene,level,data){
- if(data._normalizedRegions)return data._normalizedRegions;
+ const key=scene.id+':'+level;
+ if(data._normalizedKey===key&&data._normalizedRegions)return data._normalizedRegions;
+ data._normalizedKey=key;
  return data._normalizedRegions=data.regions.map(r=>({...r,color:displayColor(scene,level,r)}));
 }
 export function illustration(scene,difficulty='easy',fills={},preview=false,numbers=true){
