@@ -1,35 +1,40 @@
-# Coloring Through the Bible
+# Coloring Through the Bible · V2
 
-An original Light & Life Games product owned by Mike. A functional, mobile-first, dependency-free browser coloring app.
+An original, mobile-first Light & Life Games product owned by Mike.
 
-## Play
+**Play:** https://crownofthornsworship.github.io/coloring-through-the-bible/
 
-https://crownofthornsworship.github.io/coloring-through-the-bible/
+The existing twelve-story Bible Journey, engine, local artwork, chronology, completion stamps, Creative mode and GitHub Pages infrastructure are preserved. Three showcase stories now have five genuinely distinct, original coloring-book compositions:
 
-12 original SVG story illustrations, chronologically ordered from Genesis through Revelation. This is a curated **Volume One**, not a complete illustrated Bible. The final Revelation scene appears in Bible Journey and Free Color; Early Church focuses on Acts.
+| Story | Beginner | Easy | Medium | Hard | Expert |
+|---|---:|---:|---:|---:|---:|
+| David and Goliath | 30 | 65 | 140 | 280 | 500 |
+| Noah's Ark | 29 | 65 | 140 | 280 | 500 |
+| Jesus Calms the Storm | 30 | 65 | 140 | 280 | 500 |
 
-- Bible Journey, Old Testament, Life of Jesus, Early Church, Free Color, and My Artwork / Progress.
-- Easy: 12–29 regions. Detailed: 56–87. Expert: 128–175, with finer foliage, stonework, water and botanical details.
-- Tap-to-fill by number; free color with a custom color picker.
-- Pointer-based touch/mouse controls, two-pointer pinch zoom, bounded panning, zoom buttons and fit.
-- Undo/redo, find-an-area hint, optional numbers, completion celebrations and journey stamps.
-- Artwork saved independently per story, difficulty and mode in localStorage. No accounts, tracking, backend or paid APIs.
-- PNG export at 1800×1800. Export contains artwork only, without numbers or UI.
-- Service worker caches the app for offline use after its first successful online load. Browser PWA installation availability varies.
-- Original app icon and 1200×630 Open Graph / X artwork. Mike’s C4 footer included.
+The other nine stories retain **Classic Easy / Detailed / Expert** artwork. This is a curated Volume One, not a complete illustrated Bible. Existing paintings in showcase stories remain accessible as Saved V1 options.
 
-## Development / hosting
+## Coloring workspace
 
-Serve this directory using any static HTTP server, for example `python -m http.server 8080`. ES modules require HTTP; opening index.html as file:// is not supported. `npm test` runs region-integrity tests. There are no dependencies or build step. GitHub Pages publishes **main / root**; `.nojekyll` bypasses Jekyll.
+- Artwork-first mobile workspace, compact collapsible bottom tray, smooth horizontal swatches, completed-color checks and selected-color/overall remaining counts.
+- Tap-to-fill by number or Creative colors/custom picker/eraser; undo, redo and confirmation before reset.
+- Two-pointer pinch zoom, drag pan, explicit Pan mode, 100–2000% zoom, Fit and Find an Area centered on an unfinished matching-color region.
+- Numbers stay screen-sized and appear only when their area is large enough; nearby labels are culled to avoid overlaps. Numbers can be hidden completely.
+- Auto-save per scene, difficulty and mode. Refresh resumes the last active picture; Home returns to the Journey. No accounts, backend, tracking or paid gameplay APIs.
+- Completion includes Bible reference, an original recap, Think About It, Next Story, Color Again and Save Artwork.
+- PNG export is 1800 × 1800, without controls or numbers. Offline caching and a PWA manifest/icons remain supported.
+- Subtle Mike C4 footer on the home/gallery.
 
-`scenes.js` owns original vector artwork, palette and story summaries. `app.js` owns coloring, gestures, progress and gallery. `style.css` owns responsive layout. Bump the cache name in `sw.js` when changing the offline file set. All relative asset paths work under the repository Pages subpath.
+## Development
 
-## Art and Scripture
+Serve with `python -m http.server 8080`; ES modules need HTTP. `npm test` validates V1 integrity and V2 artwork/data. GitHub Pages publishes `main / root` with `.nojekyll`. No runtime dependencies or build step.
 
-All illustrations, UI and code were created for this project. No Happy Color or Lake artwork, branding, code or proprietary assets are used. Scripture is referenced; story text is an original summary rather than a quoted translation. Illustrations are stylized and symbolic, not claims of historical visual accuracy.
+`app.js` retains the coloring engine; `scenes.js` lazily loads V2 vectors; `legacy-art.js` preserves V1 geometry and story data. `style.css` implements the responsive workspace. See [ARTWORK.md](ARTWORK.md) for the reusable illustration pipeline. A new scene adds metadata plus difficulty-specific JSON/JSON.gz and a thumbnail. Bump asset/cache versions when releasing changes.
 
-## Data and limitations
+`preview.html` offers actual 360/390/412-pixel iframe viewports and a **synthetic** two-pointer gesture regression check. This does not replace physical Android touch testing.
 
-Progress remains in the current browser and device. Clearing browser data removes it; download important artwork. No cloud sync. Journey stamps remain after undo or restarting an already completed scene. The app uses region filling, not a freehand brush. Fine regions in Expert should be zoomed in. A screen reader / keyboard can reach and color every region using Enter or Space.
+## Limits
 
-The truncated original brief specified a difficulty system but did not include its remaining details; V1 uses Easy, Detailed and Expert as the initial interpretation.
+Saves stay in this browser/device; clearing browser data removes them. Download important artwork. No cloud synchronization or freehand brush. Expert can require substantial zoom; grouped neighboring fragments may fill together. Original generated line art should receive editorial review before additional scenes are published. The nine Classic stories have not received the V2 illustration overhaul.
+
+Scripture references accompany original summaries; invented dialogue is never presented as Scripture. All artwork is original to this project; no Happy Color or Lake artwork, branding or proprietary UI is used.
