@@ -27,8 +27,37 @@ function renderEditor(){navigation();document.body.classList.add('coloring');con
  $('#app').innerHTML=`<section class="editor"><div class="editor-heading"><button data-action="back" aria-label="Return home">← Home</button><div><h1>${current.title}</h1><p>${current.book}</p></div><button data-action="story" aria-label="Read the story">Story</button></div><div class="editor-settings"><label>Detail <select id="difficulty">${choices.map(([id,name])=>`<option value="${id}" ${id===difficulty?'selected':''}>${name}</option>`).join('')}</select></label><label>Mode <select id="mode"><option value="guided" ${mode==='guided'?'selected':''}>By number</option><option value="free" ${mode==='free'?'selected':''}>Creative</option></select></label><label><input type="checkbox" id="numbers" ${numbers?'checked':''}> Numbers</label></div><div class="workspace"><div class="canvas-shell"><div class="viewport" id="viewport">${art.svg}</div><div class="canvas-tools"><button data-action="zoom-out" aria-label="Zoom out">−</button><button data-action="zoom-in" aria-label="Zoom in">+</button><button data-action="fit">Fit</button><button data-action="pan" aria-pressed="false" aria-label="Pan without coloring">✥ Pan</button><button data-action="hint">Find an area</button></div><span class="zoom-status" id="zoom-status"></span></div><aside class="palette-panel ${tray?'expanded':''}"><div class="tray-summary"><button data-action="tray" aria-expanded="${tray}" aria-controls="tray-content"><span id="selected-dot"></span><span id="selected-name"></span> <span>${tray?'⌄':'⌃'} Palette & tools</span></button><strong id="progress-text"></strong></div><div class="bar"><div id="progress-bar"></div></div><div id="tray-content" ${tray?'':'hidden'}><p id="color-caption"></p><div class="swatches">${palette.map((c,i)=>`<button class="swatch" style="background:${c}" data-color-choice="${i}" aria-label="Color ${i+1}: ${colorNames[i]}" aria-pressed="false">${i+1}</button>`).join('')}</div>${mode==='free'?`<label class="small">Custom color <input class="custom-color" id="custom" type="color" value="${custom}" aria-label="Custom color"></label><button data-action="eraser" aria-pressed="${eraser}">Eraser</button>`:''}<div class="panel-actions"><button data-action="undo" aria-label="Undo">↶ Undo</button><button data-action="redo" aria-label="Redo">↷ Redo</button><button data-action="download">Save artwork</button><button data-action="reset">Reset</button></div><p class="save-note">Saved on this device · <span id="remaining"></span></p></div></aside></div></section>`;
  setupPointers();update();requestAnimationFrame(()=>{if(current&&$('#viewport'))fit();});}
 function storyCard(completed=false){const next=scenes[scenes.indexOf(current)+1];showModal(`<span class="eyebrow">${completed?'A BEAUTIFUL FINISH':'THE STORY BEHIND YOUR COLORS'}</span><h2>${current.title}</h2><b>${current.book}</b><p>${current.story}</p><h3>Think About It</h3><p>${current.think||'What does this story show you about God, and how can you respond today?'}</p><small>Original recap and reflection · Read the Bible reference for the full story.</small><div class="modal-buttons">${completed&&next?`<button class="primary" data-next="${next.id}">Next Story →</button>`:''}<button data-action="save-completed">Save Artwork</button>${completed?'<button data-action="color-again">Color Again</button>':''}<button data-action="close">${completed?'Keep enjoying my picture':'Back to coloring'}</button><button data-action="gallery">My Artwork / Progress</button></div>`);}
-let labelsFrame=0;function labelVisibility(){if(!labelsFrame)labelsFrame=requestAnimationFrame(()=>{labelsFrame=0;updateLabelVisibility();});}
-function updateLabelVisibility(){if(!current)return;const v=$('#viewport'),size=Math.min(v.clientWidth,v.clientHeight),scale=size/(difficulty.startsWith('v2-')?1200:600)*zoom;const occupied=new Set();const nodes=[...$('.color-art').querySelectorAll('[data-label]')];nodes.sort((a,b)=>Number(b.dataset.radius||50)-Number(a.dataset.radius||50));for(const el of nodes){const r=regions[Number(el.dataset.label)],x=Number(el.getAttribute('x'))*scale+tx,y=Number(el.getAttribute('y'))*scale+ty;const radius=Number(el.dataset.radius||50)*scale;const gx=Math.round(x/24),gy=Math.round(y/22),cell=gx+':'+gy;let crowded=false;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(occupied.has((gx+a)+':'+(gy+b)))crowded=true;const show=numbers&&!fills[el.dataset.label]&&radius>=9&&x>8&&y>8&&x<v.clientWidth-8&&y<v.clientHeight-8&&!crowded;el.style.display=show?'':'none';if(show)occupied.add(cell);if(difficulty.startsWith('v2-'))el.setAttribute('font-size',String(13/scale));}}
+let hintCursor=0;let labelsFrame=0;function labelVisibility(){if(!labelsFrame)labelsFrame=requestAnimationFrame(()=>{labelsFrame=0;updateLabelVisibility();});}
+function updateLabelVisibility(){
+ if(!current)return;
+ const v=$('#viewport'),svg=$('.color-art');if(!v||!svg)return;
+ const size=Math.min(v.clientWidth,v.clientHeight),units=difficulty.startsWith('v2-')?1200:600,scale=size/units*zoom;
+ const occupied=new Set(),nodes=[...svg.querySelectorAll('[data-label]')];
+ nodes.sort((a,b)=>{
+   const ar=regions[Number(a.dataset.label)],br=regions[Number(b.dataset.label)];
+   const ap=ar?.color===selected?1:0,bp=br?.color===selected?1:0;
+   return bp-ap||Number(b.dataset.radius||50)-Number(a.dataset.radius||50);
+ });
+ for(const el of nodes){
+   const r=regions[Number(el.dataset.label)];if(!r)continue;
+   const x=Number(el.getAttribute('x'))*scale+tx,y=Number(el.getAttribute('y'))*scale+ty,radius=Number(el.dataset.radius||50)*scale;
+   const selectedMatch=mode==='guided'&&r.color===selected&&!fills[r.id];
+   const minRadius=selectedMatch?(zoom<=1.1?5.5:4):10;
+   const spacing=selectedMatch?30:36,gx=Math.round(x/spacing),gy=Math.round(y/spacing),cell=gx+':'+gy;
+   let crowded=false;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(occupied.has((gx+a)+':'+(gy+b)))crowded=true;
+   const show=numbers&&!fills[r.id]&&radius>=minRadius&&x>12&&y>12&&x<v.clientWidth-12&&y<v.clientHeight-12&&!crowded;
+   el.style.display=show?'':'none';
+   if(show){
+     occupied.add(cell);
+     const screenFont=selectedMatch?18:15;
+     el.setAttribute('font-size',String(screenFont/scale));
+     el.setAttribute('font-weight',selectedMatch?'800':'650');
+     el.setAttribute('stroke','#fffdf6');
+     el.setAttribute('stroke-width',String(3.5/scale));
+     el.setAttribute('paint-order','stroke');
+   }
+ }
+}
 function update(){if(!current||!artReady)return;const done=Object.keys(fills).length,pct=percent(fills,regions.length);$('#progress-text').textContent=`${pct}%`;$('#selected-name').textContent=(eraser&&mode==='free')?'Eraser':`${selected+1} · ${colorNames[selected]}`;$('#selected-dot').style.background=custom;$('#remaining').textContent=`${regions.length-done} areas remain`;const colorSet=regions.filter(r=>r.color===selected);$('#color-caption').textContent=`${colorSet.filter(r=>!fills[r.id]).length} of ${colorSet.length} areas remain for color ${selected+1}`;$('#progress-bar').style.width=pct+'%';
  $('.color-art').querySelectorAll('[data-region]').forEach(el=>{const id=Number(el.dataset.region);el.setAttribute('fill',fills[id]||'#fffdf6');el.classList.toggle('match',mode==='guided'&&!fills[id]&&Number(el.dataset.color)===selected);el.setAttribute('aria-label',`${regions[id].name}, color ${regions[id].color+1}${fills[id]?', colored':''}`);});
  labelVisibility();
@@ -49,7 +78,20 @@ function setupPointers(){const v=$('#viewport');let pointers=new Map(),start=nul
  v.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.dataset.region){e.preventDefault();paint(Number(e.target.dataset.region));}});
  v.addEventListener('wheel',e=>{e.preventDefault();const b=v.getBoundingClientRect();setZoom(zoom*(e.deltaY>0?.9:1.1),e.clientX-b.left,e.clientY-b.top);},{passive:false});
 }
-function hint(){let r=regions.find(r=>!fills[r.id]&&(mode==='free'||r.color===selected));if(!r){message('This color is complete. Choose another color.');return;}const el=$(`[data-region="${r.id}"]`),v=$('#viewport'),box=difficulty.startsWith('v2-')?{x:r.box[0],y:r.box[1],width:r.box[2],height:r.box[3]}:el.getBBox(),size=Math.min(v.clientWidth,v.clientHeight),units=difficulty.startsWith('v2-')?1200:600;zoom=Math.max(2,Math.min(20,Math.min(v.clientWidth,v.clientHeight)*.42/(Math.max(box.width,box.height)*size/units)));tx=v.clientWidth/2-(box.x+box.width/2)*size/units*zoom;ty=v.clientHeight/2-(box.y+box.height/2)*size/units*zoom;transform();el.classList.add('hint');el.focus({preventScroll:true});setTimeout(()=>el.classList.remove('hint'),3500);message(`Found an unfinished area · color ${r.color+1}`);}
+function hint(){
+ const candidates=regions.filter(r=>!fills[r.id]&&(mode==='free'||r.color===selected)).sort((a,b)=>Number(b.radius||0)-Number(a.radius||0));
+ if(!candidates.length){message('This color is complete. Choose another color.');return;}
+ const r=candidates[hintCursor%candidates.length];hintCursor++;
+ const el=$(`[data-region="${r.id}"]`),v=$('#viewport');
+ const box=difficulty.startsWith('v2-')&&r.box?{x:r.box[0],y:r.box[1],width:r.box[2],height:r.box[3]}:el.getBBox();
+ const size=Math.min(v.clientWidth,v.clientHeight),units=difficulty.startsWith('v2-')?1200:600;
+ const fitZoom=Math.min(v.clientWidth,v.clientHeight)*.28/Math.max(1,Math.max(box.width,box.height)*size/units);
+ zoom=Math.max(2.25,Math.min(8,fitZoom));
+ tx=v.clientWidth/2-(box.x+box.width/2)*size/units*zoom;
+ ty=v.clientHeight/2-(box.y+box.height/2)*size/units*zoom;
+ transform();el.classList.add('hint');el.focus({preventScroll:true});setTimeout(()=>el.classList.remove('hint'),2600);
+ message(`Area found · color ${r.color+1} · tap Find again for the next one`);
+}
 async function download(){try{const art=illustration(current,difficulty,fills,false,false).svg;const blob=new Blob([art],{type:'image/svg+xml;charset=utf-8'}),url=URL.createObjectURL(blob),img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});const canvas=document.createElement('canvas');canvas.width=canvas.height=1800;canvas.getContext('2d').drawImage(img,0,0,1800,1800);URL.revokeObjectURL(url);const png=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!png)throw Error();const downloadUrl=URL.createObjectURL(png);showModal(`<h2>Your artwork is ready.</h2><img src="${downloadUrl}" alt="Your colored ${current.title} picture" style="display:block;width:100%;border-radius:12px"><p>Download your picture, or touch and hold it to save on your phone.</p><div class="modal-buttons"><a class="primary export-link" href="${downloadUrl}" download="${current.id}-${difficulty}-light-and-life.png">Download PNG ↓</a><button data-action="close">Back to coloring</button></div>`);$('#modal').addEventListener('close',()=>URL.revokeObjectURL(downloadUrl),{once:true});}catch{message('Could not export this picture. Please try again.');}}
 function action(a){if(a==='close'){closeModal();return;}if(a==='gallery'){closeModal();view='artwork';renderGallery();return;}if(!current)return;
  if(a==='story')storyCard(Object.keys(fills).length===regions.length);if(a==='tray'){tray=!tray;$('.palette-panel').classList.toggle('expanded',tray);$('#tray-content').hidden=!tray;const t=$('[data-action="tray"]');t.setAttribute('aria-expanded',String(tray));t.querySelector('span:last-child').textContent=(tray?'⌄':'⌃')+' Palette & tools';requestAnimationFrame(transform);}if(a==='eraser'){eraser=!eraser;const b=$('[data-action="eraser"]');if(b)b.setAttribute('aria-pressed',String(eraser));update();}if(a==='save-completed'){closeModal();download();}if(a==='color-again'){closeModal();action('reset');}
