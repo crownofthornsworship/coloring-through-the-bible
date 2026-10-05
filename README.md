@@ -20,7 +20,7 @@ The other nine stories retain **Classic Easy / Detailed / Expert** artwork. This
 - Tap-to-fill by number or Creative colors/custom picker/eraser; undo, redo and confirmation before reset.
 - Two-pointer pinch zoom, drag pan, explicit Pan mode, 100–2000% zoom, Fit and Find an Area centered on an unfinished matching-color region.
 - Numbers stay screen-sized and appear only when their area is large enough; nearby labels are culled to avoid overlaps. Numbers can be hidden completely.
-- Auto-save per scene, difficulty and mode. Refresh resumes the last active picture; Home returns to the Journey. No accounts, backend, tracking or paid gameplay APIs.
+- Auto-save per scene, difficulty and mode. V1 saves are copied into a separate V2 storage key on first use, preserving the original key and preventing a still-open V1 tab from overwriting V2 progress. Refresh resumes the last active picture; Home returns to the Journey. No accounts, backend, tracking or paid gameplay APIs.
 - Completion includes Bible reference, an original recap, Think About It, Next Story, Color Again and Save Artwork.
 - PNG export is 1800 × 1800, without controls or numbers. Offline caching and a PWA manifest/icons remain supported.
 - Subtle Mike C4 footer on the home/gallery.
