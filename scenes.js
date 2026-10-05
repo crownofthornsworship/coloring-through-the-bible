@@ -58,8 +58,7 @@ export function illustration(scene,difficulty='easy',fills={},preview=false,numb
  if(!data)return {regions:[],svg:`<svg xmlns="http://www.w3.org/2000/svg" class="color-art" viewBox="0 0 1200 1200"><image href="art/${scene.id}-thumb.jpg" width="1200" height="1200"/></svg>`};
  const regions=normalizedRegions(scene,level,data);
  const paths=regions.map(r=>`<path d="${r.d}" fill="${fills[r.id]|| (preview?palette[r.color]:'#fffdf6')}" fill-rule="evenodd" data-region="${r.id}" data-color="${r.color}" role="button" tabindex="0" aria-label="${r.name}, color ${r.color+1}"/>`).join('');
- const inkDetail={beginner:0.22,easy:0.38,medium:0.58,hard:0.78,expert:1}[level]||1;
- const inkOpacity=preview?1:inkDetail;
+ const inkOpacity=1;
  const labels=numbers?regions.map(r=>`<text x="${r.x}" y="${r.y}" data-label="${r.id}" data-radius="${r.radius}" text-anchor="middle" dominant-baseline="central" font-family="system-ui" font-size="16" fill="#303c35" pointer-events="none">${r.color+1}</text>`).join(''):'';
  return {regions,svg:`<svg xmlns="http://www.w3.org/2000/svg" class="color-art" viewBox="0 0 1200 1200" role="img" aria-label="${scene.title} coloring illustration"><rect width="1200" height="1200" fill="#fffdf6"/>${paths}<path d="${data.inkPath}" fill="#20251f" fill-opacity="${inkOpacity}" fill-rule="evenodd" pointer-events="none"/>${labels}</svg>`};
 }
