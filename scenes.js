@@ -10,12 +10,29 @@ function simplifyInkPath(d,tolerance=1.45){
  const rdp=pts=>{if(pts.length<3)return pts;let best=0,idx=0;for(let i=1;i<pts.length-1;i++){const q=dist2(pts[i],pts[0],pts[pts.length-1]);if(q>best){best=q;idx=i}}if(best>sq){const a=rdp(pts.slice(0,idx+1)),b=rdp(pts.slice(idx));return a.slice(0,-1).concat(b)}return [pts[0],pts[pts.length-1]]};
  return d.replace(/M([^Z]+)Z/g,(_,body)=>{const pts=[...body.matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)].map(m=>[+m[1],+m[2]]);if(pts.length<4)return 'M'+body+'Z';const closed=pts.concat([pts[0]]),clean=rdp(closed);return 'M'+clean.map(p=>p[0]+','+p[1]).join('L')+'Z'});
 }
-export async function ensureArt(scene,difficulty){if(!difficulty.startsWith('v2-'))return;const level=difficulty.slice(3),key=scene.id+':'+level;if(cache.has(key))return;let data;if('DecompressionStream' in globalThis){const response=await fetch(`./art/${scene.id}-${level}.json.gz?v=2.12`);if(!response.ok)throw Error('Artwork unavailable');data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}else{const response=await fetch(`./art/${scene.id}-${level}.json?v=2.12`);if(!response.ok)throw Error('Artwork unavailable');data=await response.json();}cache.set(key,data);if(cache.size>3)cache.delete(cache.keys().next().value);}
+export async function ensureArt(scene,difficulty){if(!difficulty.startsWith('v2-'))return;const level=difficulty.slice(3),key=scene.id+':'+level;if(cache.has(key))return;let data;if('DecompressionStream' in globalThis){const response=await fetch(`./art/${scene.id}-${level}.json.gz?v=2.13`);if(!response.ok)throw Error('Artwork unavailable');data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}else{const response=await fetch(`./art/${scene.id}-${level}.json?v=2.13`);if(!response.ok)throw Error('Artwork unavailable');data=await response.json();}cache.set(key,data);if(cache.size>3)cache.delete(cache.keys().next().value);}
+function displayColor(scene,level,r){
+ if(r.colorOverride!=null)return r.colorOverride;
+ const x=r.x,y=r.y,area=r.area||0;
+ // Presentation-time semantic palette for legacy V2 assets. This fixes the
+ // arbitrary coordinate-generated colors immediately without changing region IDs/saves.
+ if(y<410&&area>9000)return 0;             // sky
+ if(y<535&&area<16000)return 10;           // clouds/light details
+ if(y>900&&area>6000)return 8;             // foreground stone/earth
+ if(y>690&&area>3000)return 2;             // hills/grass
+ if(x<330&&y<790)return 3;                 // tree/foliage
+ const natural=[10,8,2,9,11,4,3,6,7];
+ return natural[(Math.floor(x/105)+Math.floor(y/125)+Math.floor(area/2200))%natural.length];
+}
+function normalizedRegions(scene,level,data){
+ if(data._normalizedRegions)return data._normalizedRegions;
+ return data._normalizedRegions=data.regions.map(r=>({...r,color:displayColor(scene,level,r)}));
+}
 export function illustration(scene,difficulty='easy',fills={},preview=false,numbers=true){
  if(!difficulty.startsWith('v2-'))return classic.illustration(scene,difficulty,fills,preview,numbers);
  const level=difficulty.slice(3),data=cache.get(scene.id+':'+level);
  if(!data)return {regions:[],svg:`<svg xmlns="http://www.w3.org/2000/svg" class="color-art" viewBox="0 0 1200 1200"><image href="art/${scene.id}-thumb.jpg" width="1200" height="1200"/></svg>`};
- const regions=data.regions;
+ const regions=normalizedRegions(scene,level,data);
  const paths=regions.map(r=>`<path d="${r.d}" fill="${fills[r.id]|| (preview?palette[r.color]:'#fffdf6')}" fill-rule="evenodd" data-region="${r.id}" data-color="${r.color}" role="button" tabindex="0" aria-label="${r.name}, color ${r.color+1}"/>`).join('');
  const labels=numbers?regions.map(r=>`<text x="${r.x}" y="${r.y}" data-label="${r.id}" data-radius="${r.radius}" text-anchor="middle" dominant-baseline="central" font-family="system-ui" font-size="16" fill="#303c35" pointer-events="none">${r.color+1}</text>`).join(''):'';
  return {regions,svg:`<svg xmlns="http://www.w3.org/2000/svg" class="color-art" viewBox="0 0 1200 1200" role="img" aria-label="${scene.title} coloring illustration"><rect width="1200" height="1200" fill="#fffdf6"/>${paths}<path d="${data.inkPath}" fill="#20251f" fill-rule="evenodd" pointer-events="none"/>${labels}</svg>`};
