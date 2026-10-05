@@ -6,10 +6,10 @@ An original Light & Life Games product owned by Mike. A functional, mobile-first
 
 https://crownofthornsworship.github.io/coloring-through-the-bible/
 
-12 original SVG story illustrations, chronologically ordered from Genesis through Revelation. This is a curated **Volume One**, not a complete illustrated Bible. The Early Church section also includes the final Revelation scene to close the journey.
+12 original SVG story illustrations, chronologically ordered from Genesis through Revelation. This is a curated **Volume One**, not a complete illustrated Bible. The final Revelation scene appears in Bible Journey and Free Color; Early Church focuses on Acts.
 
 - Bible Journey, Old Testament, Life of Jesus, Early Church, Free Color, and My Artwork / Progress.
-- Easy: 12–33 regions. Detailed: 56–88. Expert: 128–176, with finer foliage, stonework, water and botanical details.
+- Easy: 12–22 regions. Detailed: 56–88. Expert: 128–176, with finer foliage, stonework, water and botanical details.
 - Tap-to-fill by number; free color with a custom color picker.
 - Pointer-based touch/mouse controls, two-pointer pinch zoom, bounded panning, zoom buttons and fit.
 - Undo/redo, find-an-area hint, optional numbers, completion celebrations and journey stamps.
