@@ -1,4 +1,4 @@
-import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=3.6';
+import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=3.7';
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v3',LEGACY_KEY='ll-coloring-bible-release-v2';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||localStorage.getItem('ll-coloring-bible-release-v1'));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false,eraser=false,tray=false,loadingToken=0,artReady=false;
 const tabs=[['journey','Bible Journey'],['old','Old Testament'],['jesus','Life of Jesus'],['church','Early Church'],['free','Free Color'],['artwork','My Artwork / Progress']];
@@ -66,9 +66,9 @@ function updateLabelVisibility(){
    const sx=lx*scale+tx,sy=ly*scale+ty;
    // Keep labels sparse at deep zoom. Tiny neighboring regions no longer create
    // a wall of repeated numbers over faces, armor and foliage.
-   const spacing=selectedMatch?28:46,gx=Math.round(sx/spacing),gy=Math.round(sy/spacing);
-   let crowded=false;for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(occupied.has((gx+a)+':'+(gy+b)))crowded=true;
-   const usefulRadius=selectedMatch?true:(Number(r.radius||0)*scale)>=10;
+   const spacing=selectedMatch?22:32,gx=Math.round(sx/spacing),gy=Math.round(sy/spacing);
+   let crowded=false;if(!selectedMatch){for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++)if(occupied.has((gx+a)+':'+(gy+b)))crowded=true;}
+   const usefulRadius=true;
    // Only show the selected number in guided mode. This matches the way the
    // player is actually hunting areas and prevents unrelated numbers from
    // covering detailed faces/armor at high zoom.
