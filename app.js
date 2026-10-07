@@ -1,4 +1,4 @@
-import {scenes,illustration,palette as defaultPalette,colorNames as defaultColorNames,ensureArt,levels} from './scenes.js?v=3.17';
+import {scenes,illustration,palette as defaultPalette,colorNames as defaultColorNames,ensureArt,levels} from './scenes.js?v=3.18';
 let palette=defaultPalette,colorNames=defaultColorNames;
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v3',LEGACY_KEY='ll-coloring-bible-release-v2';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||localStorage.getItem('ll-coloring-bible-release-v1'));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false,eraser=false,tray=false,loadingToken=0,artReady=false;
@@ -44,7 +44,7 @@ let hintCursor=0;let labelsFrame=0;function labelVisibility(){if(!labelsFrame)la
 function updateLabelVisibility(){
  if(!current)return;
  const v=$('#viewport'),svg=$('.color-art');if(!v||!svg)return;
- const size=v.clientWidth,units=difficulty.startsWith('v2-')?1200:600,scale=size/units*zoom;
+ const size=drawingWidth(v),units=difficulty.startsWith('v2-')?1200:600,scale=size/units*zoom;
  const view={x1:-tx/scale,y1:-ty/scale,x2:(v.clientWidth-tx)/scale,y2:(v.clientHeight-ty)/scale};
  const occupied=new Set(),nodes=[...svg.querySelectorAll('[data-label]')];
  nodes.sort((a,b)=>{
@@ -108,7 +108,8 @@ function update(){if(!current||!artReady)return;const done=Object.keys(fills).le
 }
 function paint(id){if(!artReady)return;const r=regions[id];if(!r||pan)return;if(mode==='guided'&&r.color!==selected){message(`This area uses color ${r.color+1} · ${colorNames[r.color]}`);return;}const color=eraser&&mode==='free'?undefined:mode==='free'?custom:palette[selected];if(fills[id]===color)return;history.push({id,before:fills[id],after:color});future=[];if(color)fills[id]=color;else delete fills[id];saveWork();const set=regions.filter(x=>x.color===selected);update();const el=$(`[data-region="${id}"]`);el.classList.remove('filled-feedback');void el.getBoundingClientRect();el.classList.add('filled-feedback');if(mode==='guided'&&set.length&&set.every(x=>fills[x.id])&&!completionShown)message(`${colorNames[selected]} complete ✓`);}
 function undo(redo=false){if(!artReady)return;const source=redo?future:history,dest=redo?history:future;const x=source.pop();if(!x)return;const value=redo?x.after:x.before;if(value)fills[x.id]=value;else delete fills[x.id];dest.push(x);saveWork();update();}
-function transform(){const v=$('#viewport'),svg=$('.color-art'),size=v.clientWidth,units=difficulty.startsWith('v2-')?1200:600;
+function drawingWidth(v){const svg=$('.color-art');return svg?.classList.contains('landscape-art')?Math.min(v.clientWidth,v.clientHeight*1200/Number(svg.dataset.artHeight)):v.clientWidth;}
+function transform(){const v=$('#viewport'),svg=$('.color-art'),size=drawingWidth(v),units=difficulty.startsWith('v2-')?1200:600;
  if(svg.classList.contains('landscape-art')){
   const scale=size/units*zoom,artHeight=Number(svg.dataset.artHeight);
   const clamp=(t,extent,edge)=>extent<=edge?(edge-extent)/2:Math.min(0,Math.max(edge-extent,t));
@@ -136,7 +137,7 @@ function hint(){
  if(!candidates.length){message('This color is complete. Choose another color.');return;}
  const r=candidates[hintCursor%candidates.length];hintCursor++;
  const el=$(`[data-region="${r.id}"]`),v=$('#viewport'),box=el.getBBox();
- const size=v.clientWidth,units=difficulty.startsWith('v2-')?1200:600;
+ const size=drawingWidth(v),units=difficulty.startsWith('v2-')?1200:600;
  const targetScreen=Math.min(v.clientWidth,v.clientHeight)*.22;
  const fitZoom=targetScreen/Math.max(1,Math.min(Math.max(box.width,box.height),Math.sqrt(Math.max(1,box.width*box.height)))*size/units);
  zoom=Math.max(1.8,Math.min(4.25,fitZoom));
