@@ -8,3 +8,7 @@
 
 /* Mobile production canvas must always span the viewport width, even when the palette tray changes height. */
 @media(max-width:800px){.viewport .color-art{width:100%!important;height:auto!important;left:0!important}}
+
+/* Clean David Beginner: fill extends beneath its continuous ink, without seams. */
+.coloring .landscape-art [data-region].match{stroke-dasharray:none;stroke-width:2}
+@media(max-width:800px){.viewport .color-art.landscape-art{height:100%!important}}

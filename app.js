@@ -1,10 +1,11 @@
-import {scenes,illustration,palette,colorNames,ensureArt,levels} from './scenes.js?v=3.16';
+import {scenes,illustration,palette as defaultPalette,colorNames as defaultColorNames,ensureArt,levels} from './scenes.js?v=3.17';
+let palette=defaultPalette,colorNames=defaultColorNames;
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v3',LEGACY_KEY='ll-coloring-bible-release-v2';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||localStorage.getItem('ll-coloring-bible-release-v1'));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false,eraser=false,tray=false,loadingToken=0,artReady=false;
 const tabs=[['journey','Bible Journey'],['old','Old Testament'],['jesus','Life of Jesus'],['church','Early Church'],['free','Free Color'],['artwork','My Artwork / Progress']];
 function message(text){$('#toast').textContent=text;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2700);}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(saved));return true;}catch{message('Storage unavailable. Download your picture before leaving.');return false;}}
-function key(){return `${current.id}:${difficulty}:${mode}:${current.id==='david'&&difficulty==='v2-beginner'?'david-beginner6':'art3'}`;}
+function key(){return `${current.id}:${difficulty}:${mode}:${current.id==='david'&&difficulty==='v2-beginner'?'david-beginner8':'art3'}`;}
 function saveWork(){if(!current||!artReady)return;saved.works[key()]={fills:{...fills},updated:Date.now(),total:regions.length,artVersion:difficulty.startsWith('v2-')?2:1};saved.lastScene={id:current.id,difficulty,mode};persist();}
 function percent(data,total){return Math.round(Object.keys(data).length/total*100)||0;}
 function progress(scene){let best=0;for(const [k,w] of Object.entries(saved.works)){if(k.startsWith(scene.id+':')){const d=k.split(':')[1];const total=w.total||illustration(scene,d).regions.length;if(total)best=Math.max(best,Math.min(100,percent(w.fills,total)));}}return best;}
@@ -21,7 +22,7 @@ function renderGallery(){++loadingToken;artReady=false;current=null;delete saved
  window.scrollTo(0,0);
 }
 async function openScene(id,restore=false){artReady=false;fills={};regions=[];history=[];future=[];current=scenes.find(s=>s.id===id);if(!current)return;if(!restore)difficulty=current.showcase?'v2-beginner':'easy';if(view==='free')mode='free';else if(!restore)mode='guided';if(view==='artwork'&&!restore){const last=Object.entries(saved.works).filter(([k,w])=>k.startsWith(id+':')&&Object.keys(w.fills).length>0).sort((a,b)=>b[1].updated-a[1].updated)[0];if(last){[,difficulty,mode]=last[0].split(':');}}const token=++loadingToken;try{if(difficulty.startsWith('v2-')){message('Opening your illustration…');await ensureArt(current,difficulty);if(token!==loadingToken)return;}}catch{if(token!==loadingToken)return;view='journey';renderGallery();message('Could not load artwork. Please reconnect and try again.');return;}history=[];future=[];fills={...(saved.works[key()]?.fills||{})};selected=0;custom=palette[0];completionShown=Object.keys(fills).length===illustration(current,difficulty).regions.length;pan=false;zoom=1;tx=0;ty=0;renderEditor();window.scrollTo(0,0);}
-function renderEditor(){navigation();document.body.classList.add('coloring');const art=illustration(current,difficulty,fills,false,true);regions=art.regions;artReady=true;
+function renderEditor(){navigation();document.body.classList.add('coloring');const art=illustration(current,difficulty,fills,false,true);regions=art.regions;palette=art.palette||defaultPalette;colorNames=art.colorNames||defaultColorNames;if(mode==='guided')custom=palette[selected];artReady=true;
  // Generated production files may use source IDs that differ from array indexes.
  // illustration() normalizes them; guided fills are also normalized to the
  // region's current palette color so stale saved mappings cannot repaint sky,
@@ -99,7 +100,7 @@ function updateLabelVisibility(){
  }
 }
 function update(){if(!current||!artReady)return;const done=Object.keys(fills).length,pct=percent(fills,regions.length);$('#progress-text').textContent=`${pct}%`;$('#selected-name').textContent=(eraser&&mode==='free')?'Eraser':`${selected+1} · ${colorNames[selected]}`;$('#selected-dot').style.background=custom;$('#remaining').textContent=`${regions.length-done} areas remain`;const colorSet=regions.filter(r=>r.color===selected);$('#color-caption').textContent=`${colorSet.filter(r=>!fills[r.id]).length} of ${colorSet.length} areas remain for color ${selected+1}`;$('#progress-bar').style.width=pct+'%';
- $('.color-art').querySelectorAll('[data-region]').forEach(el=>{const id=Number(el.dataset.region);el.setAttribute('fill',fills[id]||'#fffdf6');el.classList.toggle('match',mode==='guided'&&!fills[id]&&Number(el.dataset.color)===selected);el.setAttribute('aria-label',`${regions[id].name}, color ${regions[id].color+1}${fills[id]?', colored':''}`);});
+ $('.color-art').querySelectorAll('[data-region]').forEach(el=>{const id=Number(el.dataset.region);el.setAttribute('fill',fills[id]||'#fffdf6');if($('.color-art').classList.contains('landscape-art'))el.setAttribute('stroke',fills[id]||'#fffdf6');el.classList.toggle('match',mode==='guided'&&!fills[id]&&Number(el.dataset.color)===selected);el.setAttribute('aria-label',`${regions[id].name}, color ${regions[id].color+1}${fills[id]?', colored':''}`);});
  labelVisibility();
  document.querySelectorAll('.swatch').forEach((el,i)=>{el.classList.toggle('chosen',i===selected);el.setAttribute('aria-pressed',String(i===selected));const set=regions.filter(r=>r.color===i);el.classList.toggle('done',mode==='guided'&&set.length>0&&set.every(r=>fills[r.id]));});
  $('[data-action="undo"]').disabled=!history.length;$('[data-action="redo"]').disabled=!future.length;
@@ -107,7 +108,19 @@ function update(){if(!current||!artReady)return;const done=Object.keys(fills).le
 }
 function paint(id){if(!artReady)return;const r=regions[id];if(!r||pan)return;if(mode==='guided'&&r.color!==selected){message(`This area uses color ${r.color+1} · ${colorNames[r.color]}`);return;}const color=eraser&&mode==='free'?undefined:mode==='free'?custom:palette[selected];if(fills[id]===color)return;history.push({id,before:fills[id],after:color});future=[];if(color)fills[id]=color;else delete fills[id];saveWork();const set=regions.filter(x=>x.color===selected);update();const el=$(`[data-region="${id}"]`);el.classList.remove('filled-feedback');void el.getBoundingClientRect();el.classList.add('filled-feedback');if(mode==='guided'&&set.length&&set.every(x=>fills[x.id])&&!completionShown)message(`${colorNames[selected]} complete ✓`);}
 function undo(redo=false){if(!artReady)return;const source=redo?future:history,dest=redo?history:future;const x=source.pop();if(!x)return;const value=redo?x.after:x.before;if(value)fills[x.id]=value;else delete fills[x.id];dest.push(x);saveWork();update();}
-function transform(){const v=$('#viewport'),size=v.clientWidth,artPx=size*zoom;const clamp=(t,edge)=>artPx<=edge?(edge-artPx)/2:Math.min(0,Math.max(edge-artPx,t));tx=clamp(tx,v.clientWidth);ty=clamp(ty,v.clientHeight);const svg=$('.color-art');const units=difficulty.startsWith('v2-')?1200:600;svg.style.width=size+'px';svg.style.height=size+'px';svg.style.left='0px';svg.style.top=((v.clientHeight-size)/2)+'px';svg.style.transform='none';svg.style.transformOrigin='0 0';const vx=-tx*units/(size*zoom),vy=-ty*units/(size*zoom),vw=units/zoom;svg.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vw}`);const b=$('[data-action="pan"]');b.classList.toggle('pan-on',pan);b.setAttribute('aria-pressed',String(pan));$('#zoom-status').textContent=`${Math.round(zoom*100)}% · ${pan?'Pan mode':'Tap to color · drag to move'}`;labelVisibility();}
+function transform(){const v=$('#viewport'),svg=$('.color-art'),size=v.clientWidth,units=difficulty.startsWith('v2-')?1200:600;
+ if(svg.classList.contains('landscape-art')){
+  const scale=size/units*zoom,artHeight=Number(svg.dataset.artHeight);
+  const clamp=(t,extent,edge)=>extent<=edge?(edge-extent)/2:Math.min(0,Math.max(edge-extent,t));
+  tx=clamp(tx,units*scale,v.clientWidth);ty=clamp(ty,artHeight*scale,v.clientHeight);
+  svg.style.width=v.clientWidth+'px';svg.style.height=v.clientHeight+'px';svg.style.left='0px';svg.style.top='0px';svg.style.transform='none';
+  svg.setAttribute('viewBox',`${-tx/scale} ${-ty/scale} ${v.clientWidth/scale} ${v.clientHeight/scale}`);
+ }else{
+  const artPx=size*zoom,clamp=(t,edge)=>artPx<=edge?(edge-artPx)/2:Math.min(0,Math.max(edge-artPx,t));
+  tx=clamp(tx,v.clientWidth);ty=clamp(ty,v.clientHeight);svg.style.width=size+'px';svg.style.height=size+'px';svg.style.left='0px';svg.style.top=((v.clientHeight-size)/2)+'px';svg.style.transform='none';svg.style.transformOrigin='0 0';
+  const vx=-tx*units/(size*zoom),vy=-ty*units/(size*zoom),vw=units/zoom;svg.setAttribute('viewBox',`${vx} ${vy} ${vw} ${vw}`);
+ }
+ const b=$('[data-action="pan"]');b.classList.toggle('pan-on',pan);b.setAttribute('aria-pressed',String(pan));$('#zoom-status').textContent=`${Math.round(zoom*100)}% · ${pan?'Pan mode':'Tap to color · drag to move'}`;labelVisibility();}
 function fit(){zoom=1;tx=ty=0;transform();}
 function setZoom(z,cx,cy){const v=$('#viewport');cx=cx??v.clientWidth/2;cy=cy??v.clientHeight/2;const old=zoom;zoom=Math.max(1,Math.min(20,z));tx=cx-(cx-tx)*zoom/old;ty=cy-(cy-ty)*zoom/old;transform();}
 function setupPointers(){const v=$('#viewport');let pointers=new Map(),start=null,moved=false,multi=false,pinch=null;
