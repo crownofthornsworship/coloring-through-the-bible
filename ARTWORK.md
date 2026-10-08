@@ -16,3 +16,7 @@ V1 geometry remains in `legacy-art.js`. V2 save keys contain `v2-LEVEL`, so exis
 ## Purpose-drawn Beginner plates · v3.20
 
 David and Goliath, Noah's Ark, and Jesus Calms the Storm now each have a purpose-drawn Beginner plate created specifically for color-by-number play. Each plate uses 28 large closed regions, thick clean boundaries, generous label clearance, restrained scene detail, and no algorithmic filler subdivisions. These plates use a new `purpose-drawn-cbn1` save namespace so older fills cannot land on changed geometry.
+
+### v3.21 palette correction
+
+Each Beginner plate now carries an art-directed, scene-specific color map. Sky, clouds, clothing, wood, ground, rainbow bands, sails, boat and water are assigned intentionally instead of inferred from region coordinates. The `purpose-drawn-cbn2` namespace prevents incorrect v3.20 color progress from carrying into the corrected plates.

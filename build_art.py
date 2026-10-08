@@ -8,6 +8,11 @@ from PIL import Image
 import argparse
 p=argparse.ArgumentParser();p.add_argument('source');p.add_argument('scene');p.add_argument('level');p.add_argument('--guide',help='Approved flat-color version of this exact line plate');a=p.parse_args()
 out=Path(__file__).parent/'art';out.mkdir(exist_ok=True)
+BEGINNER_COLOR_MAPS={
+ 'david':[0,10,4,8,9,11,4,5,2,6,11,7,10,4,9,5,3,2,11,4,8,2,9,3,10,8,8,8],
+ 'ark':[0,1,6,11,2,7,4,10,5,3,10,9,11,3,10,2,9,4,5,9,6,7,11,8,9,7,7,7],
+ 'storm':[0,10,10,10,0,10,8,4,10,9,6,2,6,7,5,3,10,4,11,9,4,10,7,7,7,0,7,7],
+}
 im=cv2.imread(a.source); gray=cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
 # Normalize all illustrations to the same stable coordinate system.
 gray=cv2.resize(gray,(1200,1200),interpolation=cv2.INTER_AREA)
@@ -36,7 +41,7 @@ for j in range(1,n):
  if not paths:continue
  dist=cv2.distanceTransform(mask,cv2.DIST_L2,5);_,radius,_,point=cv2.minMaxLoc(dist)
  label_x=max(24,min(1176,x+point[0]));label_y=max(24,min(1176,y+point[1]))
- regions.append({'id':len(regions),'d':''.join(paths),'x':label_x,'y':label_y,'radius':round(radius,1),'box':[int(x),int(y),int(w),int(h)],'area':int(area),'color':0,'name':f'Illustration area {len(regions)+1}'})
+ regions.append({'id':len(regions),'sourceComponent':int(j),'d':''.join(paths),'x':label_x,'y':label_y,'radius':round(radius,1),'box':[int(x),int(y),int(w),int(h)],'area':int(area),'color':0,'name':f'Illustration area {len(regions)+1}'})
 # Assign a restrained, adult-coloring-book palette when no approved color guide exists.
 # This is geometry-aware rather than the old arbitrary x/y modulo coloring.
 # Large upper regions read as sky; enclosed upper-middle soft regions become cream/clouds;
@@ -63,23 +68,17 @@ if not a.guide:
    x,y,w,h=r['box']
    if y<30 and r['area']>120000:r['color']=0
 
-# Group tiny neighboring details with a larger nearby area instead of demanding
-# hundreds of inaccessible taps on garment seams, eyes and foliage fragments.
-# The underlying five drawings remain different; no geometry is subdivided.
+# Keep only the largest label-friendly components. Small facial details and
+# decorative gaps remain white line art instead of being bundled into an
+# unrelated playable region. One tap must always control one contiguous area.
 target={'beginner':28,'easy':60,'medium':120,'hard':220,'expert':360}[a.level]
 if len(regions)>target:
- retained=sorted(regions,key=lambda r:r['area'],reverse=True)[:target]
- seed=np.ones((1200,1200),np.uint8)
- for r in retained:seed[labels==int(labels[r['y'],r['x']])]=0
- _,near=cv2.distanceTransformWithLabels(seed,cv2.DIST_L2,5,labelType=cv2.DIST_LABEL_CCOMP)
- lookup={int(near[r['y'],r['x']]):r for r in retained}
- retained_ids={r['id'] for r in retained}
- for r in regions:
-  if r['id'] not in retained_ids:
-   owner=lookup.get(int(near[r['y'],r['x']]))
-   if owner:owner['d']+=r['d'];owner['area']+=r['area']
- regions=sorted(retained,key=lambda r:(r['y'],r['x']))
+ regions=sorted(sorted(regions,key=lambda r:r['area'],reverse=True)[:target],key=lambda r:(r['y'],r['x']))
 for j,r in enumerate(regions):r['id']=j;r['name']=f'Coloring area {j+1}'
+if a.level=='beginner' and a.scene in BEGINNER_COLOR_MAPS:
+ authored=BEGINNER_COLOR_MAPS[a.scene]
+ if len(authored)!=len(regions):raise SystemExit(f'Beginner color map mismatch for {a.scene}: {len(authored)} colors for {len(regions)} regions')
+ for r,color in zip(regions,authored):r['colorOverride']=color
 # Structural QA: no playable region may touch the page edge. Extremely large
 # regions are flagged because they usually indicate an open outline/leak.
 bad=[r for r in regions if r['box'][0]<=0 or r['box'][1]<=0 or r['box'][0]+r['box'][2]>=1200 or r['box'][1]+r['box'][3]>=1200]
