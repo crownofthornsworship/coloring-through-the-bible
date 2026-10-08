@@ -1,4 +1,4 @@
-import {scenes,illustration,palette as defaultPalette,colorNames as defaultColorNames,ensureArt,levels} from './scenes.js?v=3.23';
+import {scenes,illustration,palette as defaultPalette,colorNames as defaultColorNames,ensureArt,levels} from './scenes.js?v=3.24';
 let palette=defaultPalette,colorNames=defaultColorNames;
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v3',LEGACY_KEY='ll-coloring-bible-release-v2';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||localStorage.getItem('ll-coloring-bible-release-v1'));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false,eraser=false,tray=false,loadingToken=0,artReady=false;
