@@ -20,3 +20,7 @@ David and Goliath, Noah's Ark, and Jesus Calms the Storm now each have a purpose
 ### v3.21 palette correction
 
 Each Beginner plate now carries an art-directed, scene-specific color map. Sky, clouds, clothing, wood, ground, rainbow bands, sails, boat and water are assigned intentionally instead of inferred from region coordinates. The `purpose-drawn-cbn2` namespace prevents incorrect v3.20 color progress from carrying into the corrected plates.
+
+### v3.22 premium landscape pilot
+
+“Peace, be still” now uses a new 4:3 landscape composition created expressly for mobile color-by-number play. It has 80 independent closed regions, a complete boat and cast, expressive biblical storytelling, an art-directed flat-color guide, and larger scene depth without geometric filler. This is the visual-quality pilot for replacing the remaining showcase plates.
