@@ -12,3 +12,7 @@ Three showcase stories each use five separately composed illustrations, not one 
 The source line plates were generated for this product and traced into the repository's complete vector geometry. No third-party coloring-app artwork, branding, assets or code were used. Illustrations are imaginative period-inspired interpretations, not historical photographs. Numeric region counts are a usability budget, not a claim of artistic sophistication.
 
 V1 geometry remains in `legacy-art.js`. V2 save keys contain `v2-LEVEL`, so existing V1 paintings remain available without assigning their old fills to different geometry.
+
+## Purpose-drawn Beginner plates · v3.20
+
+David and Goliath, Noah's Ark, and Jesus Calms the Storm now each have a purpose-drawn Beginner plate created specifically for color-by-number play. Each plate uses 28 large closed regions, thick clean boundaries, generous label clearance, restrained scene detail, and no algorithmic filler subdivisions. These plates use a new `purpose-drawn-cbn1` save namespace so older fills cannot land on changed geometry.

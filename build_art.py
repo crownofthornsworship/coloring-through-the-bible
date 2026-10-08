@@ -35,7 +35,8 @@ for j in range(1,n):
   paths.append('M'+'L'.join(f'{q[0]},{q[1]}' for q in pts)+'Z')
  if not paths:continue
  dist=cv2.distanceTransform(mask,cv2.DIST_L2,5);_,radius,_,point=cv2.minMaxLoc(dist)
- regions.append({'id':len(regions),'d':''.join(paths),'x':x+point[0],'y':y+point[1],'radius':round(radius,1),'box':[int(x),int(y),int(w),int(h)],'area':int(area),'color':0,'name':f'Illustration area {len(regions)+1}'})
+ label_x=max(24,min(1176,x+point[0]));label_y=max(24,min(1176,y+point[1]))
+ regions.append({'id':len(regions),'d':''.join(paths),'x':label_x,'y':label_y,'radius':round(radius,1),'box':[int(x),int(y),int(w),int(h)],'area':int(area),'color':0,'name':f'Illustration area {len(regions)+1}'})
 # Assign a restrained, adult-coloring-book palette when no approved color guide exists.
 # This is geometry-aware rather than the old arbitrary x/y modulo coloring.
 # Large upper regions read as sky; enclosed upper-middle soft regions become cream/clouds;
@@ -54,6 +55,13 @@ if not a.guide:
    natural=[10,8,2,9,11,4,3]
    color=natural[(int(cx//95)+int(cy//110)+int(area//1800))%len(natural)]
   r['color']=color
+ # A purpose-drawn Beginner plate can enclose the entire backdrop inside its
+ # page frame. Classify that large top-touching interior as sky even when its
+ # centroid falls below the horizon.
+ if a.level=='beginner':
+  for r in regions:
+   x,y,w,h=r['box']
+   if y<30 and r['area']>120000:r['color']=0
 
 # Group tiny neighboring details with a larger nearby area instead of demanding
 # hundreds of inaccessible taps on garment seams, eyes and foliage fragments.

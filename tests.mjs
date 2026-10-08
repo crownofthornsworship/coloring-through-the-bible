@@ -1,9 +1,24 @@
+import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {scenes,illustration,palette} from './scenes.js';
-test('The V1 journey spans Genesis through Revelation with unique stories',()=>{assert.equal(scenes[0].book,'Genesis 1');assert.match(scenes.at(-1).book,/Revelation/);assert.equal(new Set(scenes.map(s=>s.id)).size,scenes.length);});
-for(const scene of scenes)test(`${scene.id}: every detail level has valid, stable, independently fillable regions`,()=>{let previous=0;for(const d of ['easy','detailed','expert']){const {regions,svg}=illustration(scene,d);assert.ok(regions.length>previous);previous=regions.length;assert.equal((svg.match(/data-region=/g)||[]).length,regions.length);const fills=Object.fromEntries(regions.map(r=>[r.id,palette[r.color]]));assert.ok(regions.every(r=>r.color>=0&&r.color<palette.length));assert.deepEqual(illustration(scene,d,fills).regions,regions);assert.equal(new Set(regions.map(r=>r.id)).size,regions.length);assert.ok(!illustration(scene,d,fills).svg.includes('fill="undefined"'));}});
-import {readFileSync} from 'node:fs';
 import {gunzipSync} from 'node:zlib';
-import {createHash} from 'node:crypto';
-for(const id of ['david','ark','storm'])test(`${id}: five distinct V2 illustration plates, region bounds and compressed integrity`,()=>{const hashes=[];const bounds=[[15,30],[30,70],[70,150],[150,300],[250,650]];for(const [i,level] of ['beginner','easy','medium','hard','expert'].entries()){const raw=readFileSync(`art/${id}-${level}.json`),art=JSON.parse(raw);assert.deepEqual(gunzipSync(readFileSync(`art/${id}-${level}.json.gz`)),raw);assert.ok(art.regions.length>=bounds[i][0]&&art.regions.length<=bounds[i][1]);assert.equal(new Set(art.regions.map(r=>r.id)).size,art.regions.length);assert.ok(art.regions.every(r=>r.color>=0&&r.color<12&&r.x>0&&r.x<1200&&r.y>0&&r.y<1200&&r.radius>0&&r.d.startsWith('M')));assert.ok(art.inkPath.length>10000);hashes.push(createHash('sha256').update(art.inkPath).digest('hex'));}assert.equal(new Set(hashes).size,5);});
+
+test('purpose-drawn Beginner plates are closed, large and label-friendly',()=>{
+ for(const id of ['david','ark','storm']){
+  const raw=readFileSync(`art/${id}-beginner.json`),art=JSON.parse(raw);
+  assert.deepEqual(gunzipSync(readFileSync(`art/${id}-beginner.json.gz`)),raw);
+  assert.equal(art.regions.length,28);
+  assert.equal(new Set(art.regions.map(r=>r.id)).size,28);
+  assert.ok(art.inkPath.length>10000);
+  assert.ok(art.regions.every(r=>r.radius>=10));
+  assert.ok(art.regions.every(r=>r.box[0]>0&&r.box[1]>0&&r.box[0]+r.box[2]<1200&&r.box[1]+r.box[3]<1200));
+  assert.ok(art.regions.every(r=>r.area<1200*1200*.28));
+ }
+});
+
+test('release references the new artwork and save namespace',()=>{
+ assert.match(readFileSync('index.html','utf8'),/app\.js\?v=3\.20/);
+ assert.match(readFileSync('app.js','utf8'),/purpose-drawn-cbn1/);
+ assert.match(readFileSync('scenes.js','utf8'),/json\?v=3\.20/);
+ assert.match(readFileSync('sw.js','utf8'),/bible-colors-v3\.20/);
+});

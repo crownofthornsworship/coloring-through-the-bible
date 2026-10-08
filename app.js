@@ -1,11 +1,11 @@
-import {scenes,illustration,palette as defaultPalette,colorNames as defaultColorNames,ensureArt,levels} from './scenes.js?v=3.19';
+import {scenes,illustration,palette as defaultPalette,colorNames as defaultColorNames,ensureArt,levels} from './scenes.js?v=3.20';
 let palette=defaultPalette,colorNames=defaultColorNames;
 const $=s=>document.querySelector(s),KEY='ll-coloring-bible-release-v3',LEGACY_KEY='ll-coloring-bible-release-v2';let saved={works:{},finished:[]};try{const x=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||localStorage.getItem('ll-coloring-bible-release-v1'));if(x&&x.works&&Array.isArray(x.finished))saved=x;}catch{}
 let view='journey',current=null,difficulty='easy',mode='guided',selected=0,custom=palette[0],numbers=true,regions=[],fills={},history=[],future=[],pan=false,zoom=1,tx=0,ty=0,toastTimer,completionShown=false,eraser=false,tray=false,loadingToken=0,artReady=false;
 const tabs=[['journey','Bible Journey'],['old','Old Testament'],['jesus','Life of Jesus'],['church','Early Church'],['free','Free Color'],['artwork','My Artwork / Progress']];
 function message(text){$('#toast').textContent=text;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2700);}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(saved));return true;}catch{message('Storage unavailable. Download your picture before leaving.');return false;}}
-function key(){return `${current.id}:${difficulty}:${mode}:${current.id==='david'&&difficulty==='v2-beginner'?'david-beginner9':'art3'}`;}
+function key(){return `${current.id}:${difficulty}:${mode}:${difficulty==='v2-beginner'?'purpose-drawn-cbn1':'art3'}`;}
 function saveWork(){if(!current||!artReady)return;saved.works[key()]={fills:{...fills},updated:Date.now(),total:regions.length,artVersion:difficulty.startsWith('v2-')?2:1};saved.lastScene={id:current.id,difficulty,mode};persist();}
 function percent(data,total){return Math.round(Object.keys(data).length/total*100)||0;}
 function progress(scene){let best=0;for(const [k,w] of Object.entries(saved.works)){if(k.startsWith(scene.id+':')){const d=k.split(':')[1];const total=w.total||illustration(scene,d).regions.length;if(total)best=Math.max(best,Math.min(100,percent(w.fills,total)));}}return best;}
