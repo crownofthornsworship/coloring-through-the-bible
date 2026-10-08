@@ -24,8 +24,8 @@ test('purpose-drawn Beginner plates are closed, large and label-friendly',()=>{
 });
 
 test('release references the new artwork and save namespace',()=>{
- assert.match(readFileSync('index.html','utf8'),/app\.js\?v=3\.22/);
+ assert.match(readFileSync('index.html','utf8'),/app\.js\?v=3\.23/);
  assert.match(readFileSync('app.js','utf8'),/purpose-drawn-cbn3/);
- assert.match(readFileSync('scenes.js','utf8'),/json\?v=3\.22/);
- assert.match(readFileSync('sw.js','utf8'),/bible-colors-v3\.22/);
+ assert.match(readFileSync('scenes.js','utf8'),/json\?v=3\.23/);
+ assert.match(readFileSync('sw.js','utf8'),/bible-colors-v3\.23/);
 });
