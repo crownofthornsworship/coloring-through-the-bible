@@ -1,12 +1,15 @@
-"""Convert approved original closed-line illustrations to deterministic SVG fill paths.
-No synthetic subdivisions. Reject tiny islands; put labels at maximum interior clearance.
-Trace one compound vector ink path for crisp deep zoom.
+"""Convert approved closed-line illustrations to deterministic color-by-number art.
+
+Difficulty describes the tap experience, never how much of the picture is allowed
+to receive color. Every legitimate enclosed area is retained. Beginner plates earn
+their label through large, readable shapes and low fragmentation; harder plates use
+progressively smaller or more fragmented shapes that demand more zoom and taps.
 """
 import cv2,json,numpy as np,base64,gzip
 from pathlib import Path
 from PIL import Image
 import argparse
-p=argparse.ArgumentParser();p.add_argument('source');p.add_argument('scene');p.add_argument('level');p.add_argument('--guide',help='Approved flat-color version of this exact line plate');p.add_argument('--width',type=int,default=1200);p.add_argument('--height',type=int,default=1200);p.add_argument('--target',type=int);p.add_argument('--premium',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('source');p.add_argument('scene');p.add_argument('level');p.add_argument('--guide',help='Approved flat-color version of this exact line plate');p.add_argument('--width',type=int,default=1200);p.add_argument('--height',type=int,default=1200);p.add_argument('--premium',action='store_true');a=p.parse_args()
 out=Path(__file__).parent/'art';out.mkdir(exist_ok=True)
 BEGINNER_COLOR_MAPS={
  'david':[0,10,4,8,9,11,4,5,2,6,11,7,10,4,9,5,3,2,11,4,8,2,9,3,10,8,8,8],
@@ -27,7 +30,10 @@ ink=cv2.dilate(ink,np.ones((3,3),np.uint8),iterations=1)
 if a.premium:
  ink[[0,-1],:]=1;ink[:,[0,-1]]=1
 white=1-ink;n,labels,stats,centers=cv2.connectedComponentsWithStats(white,4)
-regions=[];minimum={'beginner':1100,'easy':650,'medium':260,'hard':150,'expert':90}[a.level]
+# This floor only removes raster noise too small to paint even at maximum zoom.
+# It is deliberately independent of difficulty: a label must never discard real
+# parts of an otherwise complete illustration.
+regions=[];minimum=90
 for j in range(1,n):
  x,y,w,h,area=stats[j]
  if area<minimum or w<6 or h<6:continue
@@ -72,16 +78,12 @@ if not a.guide:
    x,y,w,h=r['box']
    if y<30 and r['area']>a.width*a.height*.08:r['color']=0
 
-# Keep only the largest label-friendly components. Small facial details and
-# decorative gaps remain white line art instead of being bundled into an
-# unrelated playable region. One tap must always control one contiguous area.
-target=a.target or {'beginner':28,'easy':60,'medium':120,'hard':220,'expert':360}[a.level]
-if len(regions)>target:
- regions=sorted(sorted(regions,key=lambda r:r['area'],reverse=True)[:target],key=lambda r:(r['y'],r['x']))
+# Preserve every legitimate enclosed component. One tap always controls one
+# contiguous area; no area disappears merely to satisfy a region-count quota.
+regions=sorted(regions,key=lambda r:(r['y'],r['x']))
 for j,r in enumerate(regions):r['id']=j;r['name']=f'Coloring area {j+1}'
-if a.level=='beginner' and a.scene in BEGINNER_COLOR_MAPS and not a.premium:
+if a.level=='beginner' and a.scene in BEGINNER_COLOR_MAPS and not a.premium and len(BEGINNER_COLOR_MAPS[a.scene])==len(regions):
  authored=BEGINNER_COLOR_MAPS[a.scene]
- if len(authored)!=len(regions):raise SystemExit(f'Beginner color map mismatch for {a.scene}: {len(authored)} colors for {len(regions)} regions')
  for r,color in zip(regions,authored):r['colorOverride']=color
 # Structural QA: no playable region may touch the page edge. Extremely large
 # regions are flagged because they usually indicate an open outline/leak.
@@ -94,6 +96,16 @@ if huge:raise SystemExit(f'Likely segmentation leak: {len(huge)} region(s) excee
 # distant soldiers from degenerating into unnumbered micro-regions.
 too_tiny=[r for r in regions if r['radius']<2.2 or min(r['box'][2],r['box'][3])<6]
 if too_tiny: raise SystemExit(f'Unplayable micro-regions survived cleanup: {len(too_tiny)}')
+# Difficulty QA is based on interaction burden, not a hard region/color cap.
+# A Beginner plate may have many colors and many large shapes, but it should not
+# be dominated by pinprick taps. Revise the source art if this fails; do not
+# delete regions merely to make a metric pass.
+radii=sorted(r['radius'] for r in regions)
+if a.level=='beginner' and radii:
+ p10=radii[max(0,int(len(radii)*.10)-1)]
+ micro_share=sum(radius<8 for radius in radii)/len(radii)
+ if p10<6 or micro_share>.08:
+  raise SystemExit(f'Beginner interaction is too fragmented: p10 radius={p10:.1f}, micro share={micro_share:.1%}')
 # Transparent black ink plate, no white pixels to obscure fills.
 alpha=np.clip((255-gray)*1.5,0,255).astype('uint8');alpha[gray>235]=0
 rgba=np.zeros((a.height,a.width,4),np.uint8);rgba[:,:,3]=alpha

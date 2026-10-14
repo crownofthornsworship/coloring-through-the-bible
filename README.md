@@ -6,11 +6,15 @@ An original, mobile-first Light & Life Games product owned by Mike.
 
 The existing twelve-story Bible Journey, engine, local artwork, chronology, completion stamps, Creative mode and GitHub Pages infrastructure are preserved. Three showcase stories now have five genuinely distinct, original coloring-book compositions:
 
-| Story | Beginner | Easy | Medium | Hard | Expert |
-|---|---:|---:|---:|---:|---:|
-| David and Goliath | 30 | 65 | 140 | 280 | 500 |
-| Noah's Ark | 29 | 65 | 140 | 280 | 500 |
-| Jesus Calms the Storm | 30 | 65 | 140 | 280 | 500 |
+| Level | Designed experience |
+|---|---|
+| Beginner | Big, clear areas and relaxed tapping |
+| Easy | Gentle detail with occasional closer taps |
+| Medium | Richer detail and moderate zoom |
+| Hard | Small sections and patient coloring |
+| Expert | Intricate micro-detail and precise navigation |
+
+Region and color counts are intentionally flexible. Every level must produce a complete, beautiful picture; difficulty comes from shape size, fragmentation, zoom demand and repeated taps—not from leaving artwork uncolored.
 
 The other nine stories retain **Classic Easy / Detailed / Expert** artwork. This is a curated Volume One, not a complete illustrated Bible. Existing paintings in showcase stories remain accessible as Saved V1 options.
 

@@ -2,6 +2,7 @@ import * as classic from './legacy-art.js?v=2.2';
 export const palette=classic.palette,colorNames=classic.colorNames;
 export const showcase=['david','ark','storm'];
 export const levels=['beginner','easy','medium','hard','expert'];
+export const levelLabels={beginner:'Beginner · big, clear areas',easy:'Easy · gentle detail',medium:'Medium · more detail',hard:'Hard · small sections',expert:'Expert · tiny sections'};
 export const scenes=classic.scenes.map(s=>({...s,showcase:showcase.includes(s.id),...(s.id==='david'?{title:'David and Goliath',story:'David trusted the Lord when he faced Goliath. He chose five smooth stones and went forward with his sling. The victory belonged to God.',think:'What helps you trust God when a challenge feels bigger than you?'}:{}),...(s.id==='ark'?{think:'How can remembering God’s faithfulness help you today?'}:{}),...(s.id==='storm'?{think:'When you feel afraid, how can you turn to Jesus?'}:{})}));
 const cache=new Map();
 function simplifyInkPath(d,tolerance=1.45){
@@ -10,7 +11,7 @@ function simplifyInkPath(d,tolerance=1.45){
  const rdp=pts=>{if(pts.length<3)return pts;let best=0,idx=0;for(let i=1;i<pts.length-1;i++){const q=dist2(pts[i],pts[0],pts[pts.length-1]);if(q>best){best=q;idx=i}}if(best>sq){const a=rdp(pts.slice(0,idx+1)),b=rdp(pts.slice(idx));return a.slice(0,-1).concat(b)}return [pts[0],pts[pts.length-1]]};
  return d.replace(/M([^Z]+)Z/g,(_,body)=>{const pts=[...body.matchAll(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g)].map(m=>[+m[1],+m[2]]);if(pts.length<4)return 'M'+body+'Z';const closed=pts.concat([pts[0]]),clean=rdp(closed);return 'M'+clean.map(p=>p[0]+','+p[1]).join('L')+'Z'});
 }
-export async function ensureArt(scene,difficulty){if(!difficulty.startsWith('v2-'))return;const level=difficulty.slice(3),key=scene.id+':'+level;if(cache.has(key))return;let data;if(false&&'DecompressionStream' in globalThis){const response=await fetch(`./art/${scene.id}-${level}.json.gz?v=3.24`);if(!response.ok)throw Error('Artwork unavailable');data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}else{const response=await fetch(`./art/${scene.id}-${level}.json?v=3.24`);if(!response.ok)throw Error('Artwork unavailable');data=await response.json();}cache.set(key,data);if(cache.size>3)cache.delete(cache.keys().next().value);}
+export async function ensureArt(scene,difficulty){if(!difficulty.startsWith('v2-'))return;const level=difficulty.slice(3),key=scene.id+':'+level;if(cache.has(key))return;let data;if(false&&'DecompressionStream' in globalThis){const response=await fetch(`./art/${scene.id}-${level}.json.gz?v=3.25`);if(!response.ok)throw Error('Artwork unavailable');data=await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).json();}else{const response=await fetch(`./art/${scene.id}-${level}.json?v=3.25`);if(!response.ok)throw Error('Artwork unavailable');data=await response.json();}cache.set(key,data);if(cache.size>3)cache.delete(cache.keys().next().value);}
 function displayColor(scene,level,r){
  if(r.colorOverride!=null)return r.colorOverride;
  const x=r.x,y=r.y,area=r.area||0,[bx,by,bw,bh]=r.box||[x,y,0,0],cx=bx+bw/2,cy=by+bh/2;
